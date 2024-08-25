@@ -13,7 +13,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 
   return { accessToken, refreshToken };
 };
-
+//register new user
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, username, email, password, role } = req.body;
   if (
@@ -55,6 +55,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User registerd successfully"));
 });
 
+//user login
 const loginUser = asyncHandler(async (req, res) => {
   //console.log(req.body)
   const { email, password } = req.body;
@@ -103,6 +104,7 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
+//logout user
 const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
@@ -128,6 +130,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User Logged Out"));
 });
 
+//get user details
 const userDetails = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   if (!user) {
@@ -138,6 +141,7 @@ const userDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { user }, "User Details Fetched Successfully"));
 });
 
+//get list of experts
 const experts = asyncHandler(async (_, res) => {
   const listOfExperts = await User.find({ role: "Expert" }).select(
     "-password -refreshToken"
@@ -153,6 +157,7 @@ const experts = asyncHandler(async (_, res) => {
     );
 });
 
+//get list of candidates
 const candidates = asyncHandler(async (_, res) => {
   const listOfCandidates = await User.find({ role: "Candidate" }).select(
     "-password -refreshToken"
@@ -168,7 +173,7 @@ const candidates = asyncHandler(async (_, res) => {
     );
 });
 
-//profile
+//update user profile
 const updateProfile = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { expertise, bio, experience, education } = req.body;
