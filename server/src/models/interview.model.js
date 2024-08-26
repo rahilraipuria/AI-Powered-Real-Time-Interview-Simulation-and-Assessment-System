@@ -19,6 +19,11 @@ const interviewSchema = new Schema(
       required: true,
     },
 
+    role:{
+      type:"String",
+      required:true
+    },
+
     questions: [
       {
         questionText: {
@@ -67,5 +72,23 @@ const interviewSchema = new Schema(
     timestamps: true,
   }
 );
+
+
+interviewSchema.pre('save', function(next) {
+  if (this.questions && this.responses) {
+    // Calculate total relevancy score from questions
+    this.expertOverallScore = this.questions.reduce((total, question) => {
+      return total + (question.relevancyScore || 0);
+    }, 0);
+
+    // Calculate total response score
+    this.candidateOverallScore = this.responses.reduce((total, response) => {
+      return total + (response.responseScore || 0);
+    }, 0);
+  }
+
+  next();
+});
+
 
 export const Interview = mongoose.model("Interview", interviewSchema);

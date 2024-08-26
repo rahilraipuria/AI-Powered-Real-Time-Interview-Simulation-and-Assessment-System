@@ -1,25 +1,27 @@
-import 'dotenv/config';
-import GoogleGenerativeAI from '@google/generative-ai';
+import {GoogleGenerativeAI} from '@google/generative-ai';
 
 // Access your API key as an environment variable (see "Set up your API key" above)
-const genAI = new GoogleGenerativeAI(process.env.API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-//const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
-const model = genAI.getGenerativeModel({ model: "gemini-pro"});
-async function Qrelevancy(ques) {
-  const prompt = `How difficult and relevant is the question: "${ques}" to networking? Provide a difficulty score between 0 to 100 (just return a number).`;
-
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+//const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+async function Qrelevancy(ques,role) {
+  const prompt = `How difficult and relevant is the question: "${ques}" to "${role}"? Provide a relevancy score between 0 to 100. Just return a number,dont return any text.`;
   const result = await model.generateContent(prompt);
-  const response = await result.response;
+  const response =  result.response;
   const text = response.text();
-  console.log(text);
+  console.log(`Question Relevancy:${text}`);
+  return text
+  
 }
 async function ACorrectness(ques, answer) {
-  const prompt = `"Question: ${ques}" Answer: "${answer}".Provide 0 for non-relevancy and 100 for best relevancy(just return a number).`;
+  const prompt = `"Question: ${ques}" Answer: "${answer}".Provide 0 for non-relevancy and 100 for best relevancy.Just return a number,dont return any text.`;
   const result = await model.generateContent(prompt);
-  const response = await result.response;
+  const response = result.response;
   const text = response.text();
-  console.log(text);
+  console.log(`Response Relevancy:${text}`);
+  return text
+  
 }
 
 //Qrelevancy("Explain in short the differences between TCP and UDP protocols, including their reliability, connection orientation, and use cases.?");

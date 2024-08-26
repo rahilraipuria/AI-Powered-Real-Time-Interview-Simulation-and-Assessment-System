@@ -3,10 +3,11 @@ import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { ACorrectness, Qrelevancy } from "../utils/relevancy.js";
 //new interview
 const scheduleInterview= asyncHandler(async(req,res)=>{
-    const {candidateUsername,expertUsername,dateAndTime}=req.body;
-    if(!candidateUsername || !expertUsername || !dateAndTime){
+    const {candidateUsername,expertUsername,role,dateAndTime}=req.body;
+    if(!candidateUsername || !expertUsername || !dateAndTime || !role){
         throw new ApiError(400,"All fields are required")
     }
     const candidate= await User.findOne({username:candidateUsername})
@@ -25,6 +26,7 @@ const scheduleInterview= asyncHandler(async(req,res)=>{
             candidateId:candidateId,
             expertId:expertId,
             date:new Date(dateAndTime),
+            role:role,
             questions:[],
             responses:[],
             expertScores:[],
@@ -103,10 +105,42 @@ const interviewComplete= asyncHandler(async(req,res)=>{
     return res
     .status(200)
     .json(new ApiResponse(200,{updatedInterview},"Question Answers uploaded successfully"))
-
-
 })
 
+const evaluateInterview = asyncHandler(async (req, res) => {
+    const { interviewId } = req.body;
+    const interview = await Interview.findById(interviewId);
+    const questions = interview.questions;
+    const responses = interview.responses;
+    //interview.role="Web Developer"
+    try {
+        // Evaluate relevancy scores for questions
+        const relevancyPromises = questions.map(async (question) => {
+            question.relevancyScore = await Qrelevancy(question.questionText, interview.role);
+        });
 
+        await Promise.all(relevancyPromises);
 
-export {scheduleInterview,getScheduledInterviews,getCompletedInterviews,getPendingInterviews,interviewComplete};
+        // Evaluate response scores for responses
+        const correctnessPromises = questions.map(async (question, index) => {
+            const correspondingResponse = responses[index];
+            correspondingResponse.responseScore = await ACorrectness(question.questionText, correspondingResponse.responseText);
+        });
+
+        await Promise.all(correctnessPromises);   
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json(new ApiResponse(500, {}, "Error evaluating interview"));
+    }
+
+    interview.questions = questions;
+    interview.responses = responses;
+
+    interview.status="Completed"
+
+    await interview.save();
+
+    return res.status(200).json(new ApiResponse(200, { interview }, "Interview Evaluated Successfully"));
+});
+
+export {scheduleInterview,getScheduledInterviews,getCompletedInterviews,getPendingInterviews,interviewComplete,evaluateInterview};
