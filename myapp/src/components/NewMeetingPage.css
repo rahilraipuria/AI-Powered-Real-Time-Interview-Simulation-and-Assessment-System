@@ -1,0 +1,53 @@
+/* src/components/NewMeetingPage.css */
+
+.new-meeting-container {
+    background-color: #f8f9fa; /* Light gray background for a professional look */
+    padding: 40px; /* Adding padding for space around the form */
+    border-radius: 10px; /* Slightly rounded corners */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    max-width: 600px; /* Limiting the width of the form for better readability */
+    margin: 0 auto; /* Centering the form horizontally */
+  }
+  
+  .new-meeting-form {
+    background-color: #ffffff; /* White background for the form */
+    padding: 20px; /* Adding padding inside the form */
+    border-radius: 10px; /* Matching border radius with the container */
+  }
+  
+  .new-meeting-form .form-label {
+    font-weight: bold; /* Making labels bold for better readability */
+    color: #333333; /* Darker text for labels */
+  }
+  
+  .new-meeting-form .form-control {
+    border-radius: 5px; /* Rounded corners for inputs */
+    border: 1px solid #ced4da; /* Light border color for inputs */
+  }
+  
+  .form-buttons {
+    display: flex;
+    justify-content: flex-end; /* Align buttons to the right */
+    margin-top: 20px; /* Space above the buttons */
+  }
+  
+  .form-buttons .btn-primary {
+    background-color: #003060; /* Primary color for the schedule button */
+    border-color: #003060; /* Matching border color */
+  }
+  
+  .form-buttons .btn-primary:hover {
+    background-color: #055c9d; /* Slightly darker shade on hover */
+    border-color: #055c9d; /* Matching hover border color */
+  }
+  
+  .form-buttons .btn-secondary {
+    background-color: #6c757d; /* Neutral gray for the cancel button */
+    border-color: #6c757d; /* Matching border color */
+  }
+  
+  .form-buttons .btn-secondary:hover {
+    background-color: #5a6268; /* Darker shade on hover */
+    border-color: #5a6268; /* Matching hover border color */
+  }
+  

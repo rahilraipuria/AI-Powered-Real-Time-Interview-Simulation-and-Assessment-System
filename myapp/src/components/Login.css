@@ -1,0 +1,103 @@
+/* Login.css */
+
+/* Modal Styles */
+.modal-content {
+    border-radius: 10px; /* Rounded corners for the modal */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow */
+  }
+  
+  .modal-header {
+    background-color: #003060; /* Deep navy blue for header */
+    color: #ffffff; /* White text color */
+    border-bottom: 1px solid #003060; /* Border matching the header background */
+  }
+  
+  .modal-title {
+    font-size: 1.5rem; /* Larger title font size */
+    font-weight: bold; /* Bold title */
+  }
+  
+  .modal-body {
+    padding: 2rem; /* Padding around the form */
+  }
+  
+  /* Form Styles */
+  .form-group {
+    margin-bottom: 1rem; /* Spacing between form groups */
+  }
+  
+  .form-label {
+    font-weight: bold; /* Bold labels */
+    color: #003060; /* Dark navy blue for labels */
+  }
+  
+  .form-control {
+    border-radius: 5px; /* Rounded corners for input fields */
+    border: 1px solid #dcdcdc; /* Light border color */
+    box-shadow: none; /* Remove default box-shadow */
+  }
+  
+  .form-control:focus {
+    border-color: #055c9d; /* Lighter blue border on focus */
+    box-shadow: 0 0 0 0.2rem rgba(5, 92, 157, 0.25); /* Subtle blue shadow on focus */
+  }
+  
+  /* Button Styles */
+  .btn-primary {
+    background-color: #055c9d; /* Lighter blue for the button */
+    border: none; /* Remove default border */
+    border-radius: 5px; /* Rounded button corners */
+    padding: 0.75rem 1.5rem; /* Padding inside the button */
+    font-size: 1rem; /* Font size for the button text */
+  }
+  
+  .btn-primary:hover {
+    background-color: #003060; /* Deep navy blue on hover */
+    color: #ffffff; /* White text color on hover */
+  }
+  
+  .btn-primary:focus, .btn-primary:active {
+    box-shadow: none; /* Remove box-shadow on focus and active */
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 576px) {
+    .modal-content {
+      margin: 0.5rem; /* Margin for small screens */
+    }
+  
+    .modal-body {
+      padding: 1rem; /* Reduced padding for small screens */
+    }
+  }
+/* Login.css */
+
+/* Login.css */
+
+/* Ensure the modal header styles are applied */
+.modal-header {
+    background-color: #003060; /* Deep navy blue for header */
+    color: #ffffff; /* White text color */
+    border-bottom: 1px solid #003060; /* Border matching the header background */
+  }
+  
+  /* Specific styling for close button */
+  .modal-header .btn-close {
+    color: #ffffff !important; /* Force white color */
+    opacity: 0.7; /* Slightly transparent close button */
+    background-color: transparent; /* Remove default background */
+    border: none; /* Remove default border */
+  }
+  
+  /* On hover, the close button should be fully opaque and white */
+  .modal-header .btn-close:hover {
+    color: #ffffff !important; /* White color on hover */
+    opacity: 1; /* Full opacity on hover */
+  }
+  
+  /* On focus, ensure no default focus styles are applied */
+  .modal-header .btn-close:focus {
+    box-shadow: none; /* Remove default focus shadow */
+  }
+ 
+  

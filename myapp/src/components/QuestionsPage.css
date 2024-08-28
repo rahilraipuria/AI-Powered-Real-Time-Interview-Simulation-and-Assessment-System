@@ -1,0 +1,62 @@
+/* .container {
+  background-color: #f8f9fa; 
+  border-radius: 8px; 
+  padding: 2rem; 
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /
+} */
+
+h1 {
+  font-size: 2rem; /* Larger font size for the heading */
+  margin-bottom: 1.5rem; /* Space below the heading */
+  text-align: center; /* Center align the heading */
+}
+
+.form-control {
+  border-radius: 5px; /* Rounded corners for input */
+  border: 1px solid #ced4da; /* Standard border */
+  transition: border-color 0.3s; /* Smooth transition for focus */
+}
+
+.form-control:focus {
+  border-color: #80bdff; /* Border color on focus */
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Focus shadow */
+}
+
+.list-group-item {
+  border: none; /* Remove default border */
+  border-radius: 5px; /* Rounded corners for list items */
+  margin-bottom: 1rem; /* Space between list items */
+  background-color: #ffffff; /* White background for list items */
+  transition: transform 0.2s; /* Smooth transition for hover */
+}
+
+.list-group-item:hover {
+  transform: translateY(-2px); /* Slight lift on hover */
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1); /* Shadow on hover */
+}
+
+.button-container {
+  display: flex; /* Use flexbox to align button */
+  justify-content: flex-end; /* Align button to the right */
+}
+
+.btn {
+  margin-left: 10px; /* Space between buttons */
+  transition: background-color 0.3s, color 0.3s; /* Transition for hover effect */
+}
+
+.btn-primary {
+  background-color: #007bff; /* Bootstrap primary color */
+  border-color: #007bff; /* Match border color */
+}
+
+.btn-primary:hover {
+  background-color: #0056b3; /* Darker color on hover */
+  border-color: #004085; /* Darker border on hover */
+}
+.navbar-nav .nav-link.active, .navbar-nav .nav-link.show {
+  color: gray; 
+}
+.nav-link-active{
+  color: white;
+}

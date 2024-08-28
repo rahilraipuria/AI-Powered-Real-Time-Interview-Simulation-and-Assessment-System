@@ -1,0 +1,57 @@
+/* ExpertDashboard.css */
+
+/* Overall container styling */
+.dashboard-container {
+  background-color: #f4f4f9; /* Light gray background for contrast */
+  min-height: 100vh; /* Ensure full viewport height */
+  color: #003060; /* Deep navy blue for text */
+}
+
+/* Header styling */
+header {
+  height: 4.25rem;
+  background-color: #003060; /* Deep navy blue for the header */
+  color: #ffffff; /* White text color */
+  border-bottom: 2px solid #055c9d; /* Blue border for a sleek look */
+  position: relative; /* Position relative for inner elements */
+}
+
+/* Title styling */
+.dashboard-title {
+  font-size: 1.5rem; /* Size of the dashboard title */
+  margin-left: 2rem;
+  margin-top: 1rem;
+}
+
+/* Link styling for Schedule and Past */
+.navbar-link {
+  color: gray; /* White text color */
+  font-size: 1.2rem; /* Font size for links */
+  cursor: pointer; /* Pointer cursor on hover */
+  transition: color 0.3s ease; /* Smooth transition for color change */
+  margin-right: 1rem;
+}
+
+/* Hover and active states */
+.navbar-link:hover {/* Underline on hover */
+  color: white; /* Change color on hover */
+}
+
+.navbar-link.active {
+  color: white;
+}
+
+/* Other existing styles... */
+.main {
+  padding: 3rem; /* Increase padding for better spacing */
+}
+
+.upcoming-meetings-heading {
+  color: #003060;
+}
+
+.past-meetings {
+  color: #003060 !important;
+}
+
+/* Additional styles as needed... */

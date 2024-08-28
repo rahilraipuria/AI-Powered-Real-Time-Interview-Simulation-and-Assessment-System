@@ -1,0 +1,172 @@
+/* HomePage.css */
+  
+  .nav-link {
+    font-size: 1.1rem;
+  }
+  
+  .section {
+    padding: 60px 0;
+  }
+  
+  .bg-light {
+    background-color: #f8f9fa !important;
+  }
+  
+  .followus{
+    padding-top: 0.2rem;
+  }
+
+.nav-item {
+  margin: 0 0.5rem; /* Adjust margin between nav items */
+}
+
+.nav-link {
+  font-size: 1rem; /* Adjust font size as needed */
+  color: #fff; /* Ensure text color is white */
+}
+
+.navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.1); /* Adjust the border color for the toggler */
+}
+
+
+/* HomePage.css */
+
+/* Navbar Styles */
+.navbar {
+  display: flex;
+  justify-content: space-between; /* Align brand and nav items */
+  align-items: center;
+ 
+  background-color: #343a40; /* Dark background */
+}
+
+.navbar-brand {
+  font-size: 1.2rem;
+  flex: 1; /* Allows the brand to take up more space */
+  text-align: center; /* Larger font size for brand */
+}
+
+.navbar-nav {
+  display: flex;
+  justify-content: space-around; /* Distribute nav items evenly */
+  flex: 1;
+}
+
+.nav-item {
+  margin: 0 0.5rem; /* Margin between nav items */
+}
+
+.nav-link {
+  font-size: 1rem; /* Font size for nav links */
+  color: gray; /* White color for nav links */
+  transition: color 0.3s ease; /* Smooth color transition on hover */
+}
+
+.nav-link:hover {
+  color: #f8f9fa; /* Slightly lighter color on hover */
+}
+
+/* Hero Section Styles */
+.hero-section {
+ /* Background image */
+  color: #ffffff;
+  padding: 6rem 0; /* Add padding for top and bottom */
+}
+
+.hero-section h1 {
+  font-size: 3rem; /* Larger font size for heading */
+  font-weight: 600;
+}
+
+.hero-section p {
+  font-size: 1.25rem; /* Larger font size for paragraph */
+}
+
+.btn-primary {
+  background-color: #007bff; /* Primary button color */
+  border: none;
+}
+
+.btn-outline-light {
+  border-color: #ffffff; /* Border color for outline button */
+  color: #ffffff; /* Text color for outline button */
+}
+
+.btn-outline-light:hover {
+  background-color: #ffffff; /* Background color on hover */
+  color: gray; /* Text color on hover */
+}
+
+/* Section Styles */
+section {
+  padding: 5rem 0; /* Padding for sections */
+}
+
+.bg-light {
+  background-color: #f8f9fa !important; /* Light background color */
+}
+
+.text-center {
+  text-align: center; /* Center text alignment */
+}
+
+.my-5 {
+  margin-top: 3rem !important;
+  margin-bottom: 3rem !important;
+}
+
+/* Follow Us Section */
+.followus {
+  background-color: #f1f1f1;
+  padding: 2rem 0;
+}
+
+.followus .list-inline-item a {
+  color: #495057; /* Icon color */
+  transition: color 0.3s ease; /* Smooth color transition on hover */
+}
+
+.followus .list-inline-item a:hover {
+  color: gray; /* Icon color on hover */
+}
+
+/* Footer Styles */
+.footer {
+  background-color: #343a40; /* Dark footer background */
+  color: #ffffff;
+  padding: 3rem 0;
+}
+
+.footer-title {
+  font-size: 1.25rem; /* Font size for footer titles */
+  font-weight: bold;
+}
+
+.footer .list-unstyled li {
+  margin-bottom: 0.5rem; /* Margin for list items */
+}
+
+.bg-dark {
+  background-color: #343a40 !important; /* Dark background color */
+}
+
+.text-white {
+  color: #ffffff !important; /* White text color */
+}
+
+/* Responsive Design */
+@media (max-width: 767.98px) {
+  .navbar-nav {
+    flex-direction: column; /* Stack nav items vertically on small screens */
+    text-align: center;
+  }
+
+  .nav-item {
+    margin: 0.5rem 0; /* Adjust margin for stacked items */
+  }
+}
+.close{
+  color: white;
+}
+
