@@ -1,0 +1,368 @@
+import React, { useEffect, useCallback, useState, useRef } from "react";
+import peer from "../service/peer";
+import { useSocket } from "../context/SocketProvider";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  FaPhoneAlt,
+  FaVideo,
+  FaVideoSlash,
+  FaMicrophone,
+  FaMicrophoneSlash,
+  FaQuestionCircle,
+  FaReplyAll,
+} from "react-icons/fa";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./VideoCallPage.css";
+import useSpeechRecognition from "./useSpeechRecognition.js";
+const RoomPage = () => {
+  const socket = useSocket();
+  const { text, startListening, stopListening, isListening, hasRecognitionSupport } = useSpeechRecognition();
+  const [remoteSocketId, setRemoteSocketId] = useState(null);
+  const [myStream, setMyStream] = useState();
+  const [remoteStream, setRemoteStream] = useState();
+  const localVideoRef = useRef(null); // Ref for local video element
+  const remoteVideoRef = useRef(null); // Ref for remote video element
+
+  const handleUserJoined = useCallback(({ email, id }) => {
+    console.log(`Email ${email} joined room`);
+    setRemoteSocketId(id);
+  }, []);
+
+  const handleCallUser = useCallback(async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
+    const offer = await peer.getOffer();
+    socket.emit("user:call", { to: remoteSocketId, offer });
+    setMyStream(stream);
+
+    // Attach local stream to local video element
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+    }
+  }, [remoteSocketId, socket]);
+
+  const handleIncommingCall = useCallback(
+    async ({ from, offer }) => {
+      setRemoteSocketId(from);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      setMyStream(stream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+      console.log(`Incoming Call`, from, offer);
+      const ans = await peer.getAnswer(offer);
+      socket.emit("call:accepted", { to: from, ans });
+    },
+    [socket]
+  );
+
+  const sendStreams = useCallback(() => {
+    for (const track of myStream.getTracks()) {
+      peer.peer.addTrack(track, myStream);
+    }
+  }, [myStream]);
+
+  const handleCallAccepted = useCallback(
+    ({ from, ans }) => {
+      peer.setLocalDescription(ans);
+      console.log("Call Accepted!");
+      sendStreams();
+    },
+    [sendStreams]
+  );
+
+  const handleNegoNeeded = useCallback(async () => {
+    const offer = await peer.getOffer();
+    socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
+  }, [remoteSocketId, socket]);
+
+  useEffect(() => {
+    peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
+    return () => {
+      peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
+    };
+  }, [handleNegoNeeded]);
+
+  const handleNegoNeedIncomming = useCallback(
+    async ({ from, offer }) => {
+      const ans = await peer.getAnswer(offer);
+      socket.emit("peer:nego:done", { to: from, ans });
+    },
+    [socket]
+  );
+
+  const handleNegoNeedFinal = useCallback(async ({ ans }) => {
+    await peer.setLocalDescription(ans);
+  }, []);
+
+  useEffect(() => {
+    peer.peer.addEventListener("track", async (ev) => {
+      const [remoteStream] = ev.streams;
+      console.log("GOT TRACKS!!");
+      setRemoteStream(remoteStream);
+
+      // Attach remote stream to the remote video element
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    socket.on("user:joined", handleUserJoined);
+    socket.on("incomming:call", handleIncommingCall);
+    socket.on("call:accepted", handleCallAccepted);
+    socket.on("peer:nego:needed", handleNegoNeedIncomming);
+    socket.on("peer:nego:final", handleNegoNeedFinal);
+
+    // Listen for the "call:ended" event to end the call on the other side
+    // socket.on("call:ended", handleCutCallRemote);
+
+    return () => {
+      socket.off("user:joined", handleUserJoined);
+      socket.off("incomming:call", handleIncommingCall);
+      socket.off("call:accepted", handleCallAccepted);
+      socket.off("peer:nego:needed", handleNegoNeedIncomming);
+      socket.off("peer:nego:final", handleNegoNeedFinal);
+      // socket.off("call:ended", handleCutCallRemote);
+    };
+  }, [
+    socket,
+    handleUserJoined,
+    handleIncommingCall,
+    handleCallAccepted,
+    handleNegoNeedIncomming,
+    handleNegoNeedFinal,
+  ]);
+
+  const [cameraOn, setCameraOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
+  const [questionActive, setQuestionActive] = useState(false);
+  const [answerActive, setAnswerActive] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
+  const navigate = useNavigate();
+
+  const handleCutCall = () => {
+    socket.emit("call:ended", { to: remoteSocketId });
+    // Close the peer connection
+    if (peer.peer) {
+      peer.peer.close();
+    }
+
+    // Stop all local media tracks
+    if (localVideoRef.current && localVideoRef.current.srcObject) {
+      const stream = localVideoRef.current.srcObject;
+      stream.getTracks().forEach((track) => track.stop());
+    }
+
+    setCallEnded(true);
+    navigate("/expert-dashboard"); // Replace '/expert-dashboard' with the actual route
+  };
+
+  useEffect(() => {
+    socket.on("call:ended", () => {
+      // Stop remote stream
+      if (remoteStream) {
+        remoteStream.getTracks().forEach((track) => track.stop());
+      }
+  
+      // Stop local stream
+      if (myStream) {
+        myStream.getTracks().forEach((track) => track.stop());
+      }
+  
+      // Close peer connection
+      if (peer.peer) {
+        peer.peer.close();
+      }
+  
+      // Optionally, update the UI
+      setCallEnded(true);
+    });
+  
+    return () => {
+      socket.off("call:ended");
+    };
+  }, [myStream, remoteStream, peer.peer, socket]);
+  
+
+  const { id } = useParams();
+
+  const toggleQuestion = () => setQuestionActive(!questionActive);
+  const toggleAnswer = () => setAnswerActive(!answerActive);
+  const toggleCameraphy = () => {
+    if (myStream) {
+      const videoTrack = myStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !cameraOn;
+        setCameraOn(!cameraOn);
+      }
+    }
+  };
+  
+  const toggleMicphy = () => {
+    if (myStream) {
+      const audioTrack = myStream.getAudioTracks()[0];
+      console.log( myStream.getAudioTracks()[0])
+      if (audioTrack) {
+        audioTrack.enabled = !micOn;
+        setMicOn(!micOn);
+      }
+    }
+  };
+  
+  return (
+    <div>
+      <div className="video-call-page">
+        <div className="video-container">
+          <div className="remote-video">
+            <video
+              ref={remoteVideoRef} // Use ref for remote video
+              playsInline
+              autoPlay
+              style={{ width: "100vw", height: "100%" }}
+              className="remote-video-element"
+            />
+          </div>
+          <div className="local-video">
+            <video
+              ref={localVideoRef} // Use ref for local video
+              playsInline
+              muted
+              autoPlay
+              className="local-video-element"
+            />
+          </div>
+        </div>
+
+        <div className="video-controls">
+          <button
+            className={`control-btn ${micOn ? "mic-on" : ""}`}
+            onClick={toggleMicphy}
+          >
+            {micOn ? <FaMicrophone /> : <FaMicrophoneSlash />}
+          </button>
+          <button
+            className={`control-btn ${cameraOn ? "camera-on" : ""}`}
+            onClick={toggleCameraphy}
+          >
+            {cameraOn ? <FaVideo /> : <FaVideoSlash />}
+          </button>
+          <button
+            className={`control-btn ${questionActive ? "question-active" : ""}`}
+            onClick={toggleQuestion}
+          >
+            <FaQuestionCircle />
+          </button>
+          <button
+            className={`control-btn ${answerActive ? "answer-active" : ""}`}
+            onClick={toggleAnswer}
+          >
+            <FaReplyAll />
+          </button>
+          <button className="control-btn cut-call" onClick={handleCutCall}>
+            <FaPhoneAlt />
+          </button>
+        </div>
+      </div>
+      <div className="transcript-section">
+          <h5>Live Transcript:</h5>
+          <p>{text}</p> {/* Display the transcribed text */}
+        </div>
+          <button
+            className="control-btn"
+            onClick={isListening ? stopListening : startListening}
+            disabled={!hasRecognitionSupport} // Disable if speech recognition is not supported
+          >
+            {isListening ? "Stop Transcribing" : "Start Transcribing"}
+          </button>
+      <h4>{remoteSocketId ? "Connected" : "No one in room"}</h4>
+      {myStream && (
+        <button className="control-btn cut-call" onClick={sendStreams}>
+          Send Stream
+        </button>
+      )}
+      {remoteSocketId && <button onClick={handleCallUser}>CALL</button>}
+    </div>
+  );
+};
+
+export default RoomPage;
+
+
+
+
+
+
+
+
+
+
+
+
+import { useEffect, useState } from "react";
+
+let recognition = null;
+
+if ('webkitSpeechRecognition' in window) {
+    recognition = new window.webkitSpeechRecognition(); // Use 'window.' to access the constructor
+    recognition.continuous = true;
+    recognition.lang = "en-US";
+}
+
+const useSpeechRecognition = () => {
+    const [text, setText] = useState("");
+    const [isListening, setIsListening] = useState(false);
+
+    useEffect(() => {
+        if (!recognition) return;
+
+        recognition.onresult = (event) => {
+            const transcript = Array.from(event.results)
+                .map(result => result[0])
+                .map(result => result.transcript)
+                .join('');
+            setText(transcript);
+            setIsListening(false); // Stop listening after processing the result
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error:", event.error);
+            setIsListening(false); // Ensure it stops listening on error
+        };
+
+        recognition.onend = () => {
+            setIsListening(false); // Use state setter to update
+        };
+
+    }, []);
+
+    const startListening = () => {
+        if (!isListening && recognition) { // Only start if it's not already listening
+            setText('');
+            setIsListening(true);
+            recognition.start();
+        }
+    };
+
+    const stopListening = () => {
+        if (recognition && isListening) {
+            recognition.stop();
+        }
+    };
+
+    return {
+        text,
+        isListening,
+        startListening,
+        stopListening,
+        hasRecognitionSupport: !!recognition,
+    };
+};
+
+export default useSpeechRecognition;

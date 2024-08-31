@@ -1,0 +1,126 @@
+import React, { useEffect, useCallback, useState, useRef } from "react";
+import peer from "../service/peer";
+import { useSocket } from "../context/SocketProvider";
+import { FaPhoneAlt, FaVideo, FaVideoSlash, FaMicrophone, FaMicrophoneSlash, FaMicrophoneAlt } from "react-icons/fa";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./VideoCallPage.css";
+
+const RoomPage = () => {
+  const socket = useSocket();
+  const [remoteSocketId, setRemoteSocketId] = useState(null);
+  const [myStream, setMyStream] = useState();
+  const [remoteStream, setRemoteStream] = useState();
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  
+  // Audio Recorder state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recorder, setRecorder] = useState(null); // MediaRecorder instance
+  const audioRef = useRef(null); // Ref for audio element
+
+  const handleUserJoined = useCallback(({ email, id }) => {
+    console.log(`Email ${email} joined room`);
+    setRemoteSocketId(id);
+  }, []);
+
+  const handleCallUser = useCallback(async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
+    const offer = await peer.getOffer();
+    socket.emit("user:call", { to: remoteSocketId, offer });
+    setMyStream(stream);
+
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+    }
+  }, [remoteSocketId, socket]);
+
+  const sendStreams = useCallback(() => {
+    for (const track of myStream.getTracks()) {
+      peer.peer.addTrack(track, myStream);
+    }
+  }, [myStream]);
+
+  // Audio Recording Functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+
+      const audioChunks = [];
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        // Create a download link to save the audio locally
+        const downloadLink = document.createElement("a");
+        downloadLink.href = audioUrl;
+        downloadLink.download = "recorded_audio.wav";
+        downloadLink.click();
+      };
+
+      mediaRecorder.start();
+      setRecorder(mediaRecorder);
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (recorder) {
+      recorder.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const { id } = useParams();
+
+  return (
+    <div>
+      <div className="video-call-page">
+        <div className="video-container">
+          <div className="remote-video">
+            <video
+              ref={remoteVideoRef} // Use ref for remote video
+              playsInline
+              autoPlay
+              style={{ width: "100vw", height: "100%" }}
+              className="remote-video-element"
+            />
+          </div>
+          <div className="local-video">
+            <video
+              ref={localVideoRef} // Use ref for local video
+              playsInline
+              muted
+              autoPlay
+              className="local-video-element"
+            />
+          </div>
+        </div>
+
+        <div className="video-controls">
+          <button
+            className={`control-btn ${isRecording ? "recording" : ""}`}
+            onClick={isRecording ? stopRecording : startRecording}
+          >
+            {isRecording ? <FaMicrophoneSlash /> : <FaMicrophoneAlt />}
+          </button>
+
+          <button className="control-btn cut-call">
+            <FaPhoneAlt />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RoomPage;

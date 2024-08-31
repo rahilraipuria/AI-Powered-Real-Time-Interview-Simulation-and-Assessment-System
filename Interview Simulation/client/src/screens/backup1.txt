@@ -1,0 +1,345 @@
+import React, { useEffect, useCallback, useState, useRef } from "react";
+import peer from "../service/peer";
+import { useSocket } from "../context/SocketProvider";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  FaPhoneAlt,
+  FaVideo,
+  FaVideoSlash,
+  FaMicrophone,
+  FaMicrophoneSlash,
+  FaQuestionCircle,
+  FaReplyAll,
+} from "react-icons/fa";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./VideoCallPage.css";
+import useSpeechRecognition from "./useSpeechRecognition.js";
+
+const RoomPage = () => {
+  const socket = useSocket();
+  const { text, startListening, stopListening, isListening, hasRecognitionSupport } = useSpeechRecognition();
+  const [remoteSocketId, setRemoteSocketId] = useState(null);
+  const [myStream, setMyStream] = useState();
+  const [remoteStream, setRemoteStream] = useState();
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+
+  const handleUserJoined = useCallback(({ email, id }) => {
+    console.log(`Email ${email} joined room`);
+    setRemoteSocketId(id);
+  }, []);
+
+  const handleCallUser = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      console.log('Local stream:', stream);
+      const offer = await peer.getOffer();
+      console.log('Sending offer:', offer);
+      socket.emit("user:call", { to: remoteSocketId, offer });
+      setMyStream(stream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error handling call:', error);
+    }
+  }, [remoteSocketId, socket]);
+
+  const handleIncomingCall = useCallback(
+    async ({ from, offer }) => {
+      try {
+        setRemoteSocketId(from);
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true,
+        });
+        console.log('Local stream:', stream);
+        setMyStream(stream);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+        console.log(`Incoming Call from ${from}, Offer:`, offer);
+        const ans = await peer.getAnswer(offer);
+        console.log('Sending answer:', ans);
+        socket.emit("call:accepted", { to: from, ans });
+      } catch (error) {
+        console.error('Error handling incoming call:', error);
+      }
+    },
+    [socket]
+  );
+
+  const sendStreams = useCallback(() => {
+    if (myStream) {
+      const existingSenders = peer.peer.getSenders();
+      const existingTrackIds = existingSenders.map(sender => sender.track?.id);
+      
+      myStream.getTracks().forEach((track) => {
+        // Check if the track is already being sent
+        if (!existingTrackIds.includes(track.id)) {
+          peer.peer.addTrack(track, myStream);
+        }
+      });
+    }
+  }, [myStream]);
+  
+
+  const handleCallAccepted = useCallback(
+    ({ from, ans }) => {
+      peer.setLocalDescription(ans);
+      console.log("Call Accepted!");
+      sendStreams();
+    },
+    [sendStreams]
+  );
+
+  const handleNegoNeeded = useCallback(async () => {
+    try {
+      const offer = await peer.getOffer();
+      console.log('Negotiation needed, sending offer:', offer);
+      socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
+    } catch (error) {
+      console.error('Error handling negotiation needed:', error);
+    }
+  }, [remoteSocketId, socket]);
+
+  useEffect(() => {
+    peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
+    peer.peer.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log('ICE Candidate:', event.candidate);
+        socket.emit("peer:ice-candidate", { to: remoteSocketId, candidate: event.candidate });
+      }
+    };
+    peer.peer.ontrack = (event) => {
+      console.log('Received remote track:', event);
+      const [remoteStream] = event.streams;
+      setRemoteStream(remoteStream);
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+      }
+    };
+    return () => {
+      peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
+    };
+  }, [handleNegoNeeded, remoteSocketId]);
+
+  const handleNegoNeedIncoming = useCallback(
+    async ({ from, offer }) => {
+      try {
+        const ans = await peer.getAnswer(offer);
+        console.log('Negotiation needed from', from, 'sending answer:', ans);
+        socket.emit("peer:nego:done", { to: from, ans });
+      } catch (error) {
+        console.error('Error handling negotiation need incoming:', error);
+      }
+    },
+    [socket]
+  );
+
+  const handleNegoNeedFinal = useCallback(async ({ ans }) => {
+    try {
+      await peer.setLocalDescription(ans);
+      console.log('Final negotiation answer set:', ans);
+    } catch (error) {
+      console.error('Error handling final negotiation:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    socket.on("user:joined", handleUserJoined);
+    socket.on("incoming:call", handleIncomingCall);
+    socket.on("call:accepted", handleCallAccepted);
+    socket.on("peer:nego:needed", handleNegoNeedIncoming);
+    socket.on("peer:nego:final", handleNegoNeedFinal);
+
+    return () => {
+      socket.off("user:joined", handleUserJoined);
+      socket.off("incoming:call", handleIncomingCall);
+      socket.off("call:accepted", handleCallAccepted);
+      socket.off("peer:nego:needed", handleNegoNeedIncoming);
+      socket.off("peer:nego:final", handleNegoNeedFinal);
+    };
+  }, [
+    socket,
+    handleUserJoined,
+    handleIncomingCall,
+    handleCallAccepted,
+    handleNegoNeedIncoming,
+    handleNegoNeedFinal,
+  ]);
+
+  const [cameraOn, setCameraOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
+  const [questionActive, setQuestionActive] = useState(false);
+  const [answerActive, setAnswerActive] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
+  const navigate = useNavigate();
+
+  const handleCutCall = () => {
+    socket.emit("call:ended", { to: remoteSocketId });
+    if (peer.peer) {
+      peer.peer.getSenders().forEach(sender => {
+        peer.peer.removeTrack(sender);
+      });
+      peer.peer.close();
+    }
+    if (localVideoRef.current && localVideoRef.current.srcObject) {
+      const stream = localVideoRef.current.srcObject;
+      stream.getTracks().forEach((track) => track.stop());
+    }
+    setCallEnded(true);
+    navigate("/expert-dashboard");
+  };
+  
+  
+
+  useEffect(() => {
+    socket.on("call:ended", () => {
+      if (remoteStream) {
+        remoteStream.getTracks().forEach((track) => track.stop());
+      }
+      if (myStream) {
+        myStream.getTracks().forEach((track) => track.stop());
+      }
+      if (peer.peer) {
+        peer.peer.close();
+      }
+      setCallEnded(true);
+    });
+    return () => {
+      socket.off("call:ended");
+    };
+  }, [myStream, remoteStream, peer.peer, socket]);
+
+  const { id } = useParams();
+
+  const toggleQuestion = () => setQuestionActive(!questionActive);
+  const toggleAnswer = () => setAnswerActive(!answerActive);
+  const toggleCamera = () => {
+    if (myStream) {
+      const videoTrack = myStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !cameraOn;
+        setCameraOn(!cameraOn);
+      }
+    }
+  };
+
+  const toggleMic = () => {
+    if (myStream) {
+      const audioTrack = myStream.getAudioTracks()[0];
+      console.log(myStream.getAudioTracks()[0]);
+      if (audioTrack) {
+        audioTrack.enabled = !micOn;
+        setMicOn(!micOn);
+      }
+    }
+  };
+  useEffect(() => {
+    if (myStream) {
+      const existingSenders = peer.peer.getSenders();
+      const existingTrackIds = existingSenders.map(sender => sender.track?.id);
+  
+      myStream.getTracks().forEach((track) => {
+        if (!existingTrackIds.includes(track.id)) {
+          peer.peer.addTrack(track, myStream);
+        }
+      });
+    }
+  }, [myStream]);
+  
+
+  return (
+    <div>
+      <div className="video-call-page">
+        <div className="video-container">
+          <div className="remote-video">
+            <video
+              ref={remoteVideoRef}
+              playsInline
+              autoPlay
+              style={{ width: "100vw", height: "100%" }}
+              className="remote-video-element"
+            />
+          </div>
+          <div className="local-video">
+            <video
+              ref={localVideoRef}
+              playsInline
+              muted
+              autoPlay
+              className="local-video-element"
+            />
+          </div>
+        </div>
+
+        <div className="video-controls">
+          <button
+            className={`control-btn ${micOn ? "mic-on" : ""}`}
+            onClick={toggleMic}
+          >
+            {micOn ? <FaMicrophone /> : <FaMicrophoneSlash />}
+          </button>
+          <button
+            className={`control-btn ${cameraOn ? "camera-on" : ""}`}
+            onClick={toggleCamera}
+          >
+            {cameraOn ? <FaVideo /> : <FaVideoSlash />}
+          </button>
+          <button
+            className={`control-btn ${questionActive ? "question-active" : ""}`}
+            onClick={toggleQuestion}
+          >
+            <FaQuestionCircle />
+          </button>
+          <button
+            className={`control-btn ${answerActive ? "answer-active" : ""}`}
+            onClick={toggleAnswer}
+          >
+            <FaReplyAll />
+          </button>
+          <button className="control-btn cut-call" onClick={handleCutCall}>
+            <FaPhoneAlt />
+          </button>
+        </div>
+      </div>
+      <div className="transcript-section">
+        <h5>Live Transcript:</h5>
+        <p>{text}</p>
+      </div>
+      <button
+        className="control-btn"
+        onClick={isListening ? stopListening : startListening}
+        disabled={!hasRecognitionSupport}
+      >
+        {isListening ? "Stop Transcribing" : "Start Transcribing"}
+      </button>
+      <h4>{remoteSocketId ? "Connected" : "No one in room"}</h4>
+      {myStream && (
+        <button className="control-btn cut-call" onClick={sendStreams}>
+          Send Stream
+        </button>
+      )}
+      {remoteSocketId && <button onClick={handleCallUser}>CALL</button>}
+    </div>
+  );
+};
+
+export default RoomPage;
+
+
+<div className="transcript-section">
+          <h5>Live Transcript:</h5>
+          <p>{text}</p> {/* Display the transcribed text */}
+        </div>
+          <button
+            className="control-btn"
+            onClick={isListening ? stopListening : startListening}
+            disabled={!hasRecognitionSupport} // Disable if speech recognition is not supported
+          >
+            {isListening ? "Stop Transcribing" : "Start Transcribing"}
+          </button>
