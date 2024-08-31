@@ -1,26 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Container, Navbar, Nav, Button } from 'react-bootstrap';
 import { useNavigate, NavLink } from 'react-router-dom';
 import './AdminDashboard.css';
+import useAuthStore from '../store/useAuthStore.js';
+import useStore from '../store/useStore.js';
 
 function AdminDashboard() {
   const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
-  
+  const {logout} = useAuthStore();
+  const {interviews,fetchScheduledInterviews}=useStore()
+
+  const handleLogout =async () =>{
+    await logout()
+    navigate("/")
+  }
   const handleNewMeeting = () => {
     navigate('/new-meeting');
   };
 
   const handleSchedule = () => {
-    navigate('/schedule');
+    fetchScheduledInterviews()
+    navigate('/scheduled');
   };
 
   const toggleProfile = () => {
     setShowProfile(!showProfile);
   };
 
-  // Example user data, replace with actual data as needed
-  const user = { name: "John Doe", email: "john.doe@example.com" };
+  useEffect(()=>{
+    if(interviews){
+      console.log("Interview Array: ",interviews)
+    }
+  },[interviews,handleSchedule])
+  //const user = { name: "John Doe", email: "john.doe@example.com" };
 
   return (
     <>
@@ -35,6 +48,12 @@ function AdminDashboard() {
                 className={({ isActive }) => isActive ? 'nav-link custom-link active' : 'nav-link custom-link'}
               >
                 Home
+              </NavLink>
+              <NavLink 
+                to="/users" 
+                className={({ isActive }) => isActive ? 'nav-link custom-link active' : 'nav-link custom-link'}
+              >
+                Users
               </NavLink>
               <NavLink 
                 to="/questions" 
@@ -59,6 +78,7 @@ function AdminDashboard() {
                 Profile
               </NavLink>
             </Nav>
+            <Button onClick={handleLogout}>Logout</Button>
           </Navbar.Collapse>
         </Container>
       </Navbar>
@@ -85,7 +105,7 @@ function AdminDashboard() {
             New Meeting
           </Button>
           <Button variant="outline-light" size="lg" className="mx-2" onClick={handleSchedule}>
-            Schedule
+            Scheduled
           </Button>
         </Container>
       </section>

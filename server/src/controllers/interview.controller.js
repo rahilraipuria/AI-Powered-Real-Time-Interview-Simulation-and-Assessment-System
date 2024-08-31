@@ -79,9 +79,9 @@ const getPendingInterviews= asyncHandler(async(_,res)=>{
     .json(new ApiResponse(200,{pendingInterviews},"List of scheduled interviews fetched successfully"))
 })
 
-const interviewComplete= asyncHandler(async(req,res)=>{
+/*const interviewComplete= asyncHandler(async(req,res)=>{
     const {interviewId,questions,responses}=req.body
-    if(!interviewId || !Array.isArray(questions) || !Array.isArray(responses)){
+    if(!interviewId || ( !Array.isArray(questions)) || !Array.isArray(responses)){
         throw new ApiError(400,"Questions and Answers are required")
     }
     const updatedInterview = await Interview.findByIdAndUpdate(
@@ -105,7 +105,51 @@ const interviewComplete= asyncHandler(async(req,res)=>{
     return res
     .status(200)
     .json(new ApiResponse(200,{updatedInterview},"Question Answers uploaded successfully"))
-})
+})*/
+
+const interviewComplete = asyncHandler(async (req, res) => {
+    const { interviewId, questions, responses } = req.body;
+  
+    if (!interviewId) {
+      throw new ApiError(400, "Interview ID is required");
+    }
+  
+   
+    const updateFields = {};
+  
+    if (Array.isArray(questions) && questions.length > 0) {
+      updateFields.$push = { questions: { $each: questions } };
+    }
+  
+    if (Array.isArray(responses) && responses.length > 0) {
+      if (!updateFields.$push) {
+        updateFields.$push = {};
+      }
+      updateFields.$push.responses = { $each: responses };
+    }
+  
+    if (
+      Array.isArray(questions) && questions.length > 0 &&
+      Array.isArray(responses) && responses.length > 0
+    ) {
+      updateFields.$set = { status: "Pending Evaluation" };
+    }
+  
+    const updatedInterview = await Interview.findByIdAndUpdate(
+      interviewId,
+      updateFields,
+      { new: true, useFindAndModify: false }
+    );
+  
+    if (!updatedInterview) {
+      return res.status(404).json({ error: 'Interview not found' });
+    }
+  
+    return res.status(200).json(
+      new ApiResponse(200, { updatedInterview }, "Question Answers uploaded successfully")
+    );
+  });
+  
 
 const evaluateInterview = asyncHandler(async (req, res) => {
     const { interviewId } = req.body;
@@ -142,5 +186,7 @@ const evaluateInterview = asyncHandler(async (req, res) => {
 
     return res.status(200).json(new ApiResponse(200, { interview }, "Interview Evaluated Successfully"));
 });
+
+
 
 export {scheduleInterview,getScheduledInterviews,getCompletedInterviews,getPendingInterviews,interviewComplete,evaluateInterview};
