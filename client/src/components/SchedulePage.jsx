@@ -1,30 +1,32 @@
-// src/components/SchedulePage.js
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Container, Navbar, Nav, Table, Button, Modal, Form } from 'react-bootstrap';
 import './SchedulePage.css';
-
+import useStore  from '../store/useStore.js';
+import { evaluateTheInterview } from '../services/api.js';
 function SchedulePage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
   const [activeSection, setActiveSection] = useState('scheduled');
-  const [interviews, setInterviews] = useState([
-    { id: '1', date: '2024-08-30', time: '10:00 AM' },
-    { id: '2', date: '2024-08-31', time: '11:00 AM' },
-    { id: '3', date: '2024-09-01', time: '01:00 PM' },
-    { id: '4', date: '2024-09-02', time: '03:00 PM' },
-  ]);
+  const {interviews,fetchScheduledInterviews,fetchPendingInterviews,fetchCompletedInterviews}= useStore();
+  useEffect(()=>{
+    const fetch=async()=>{
+    if(activeSection==="scheduled"){
+      fetchScheduledInterviews()
+    }
+    else if(activeSection==="pending"){
+      fetchPendingInterviews()
+    }
+    else if(activeSection==="completed"){
+      fetchCompletedInterviews()
+  }
+}
+fetch()
+  },[activeSection])
+  //const [pendingInterviews, setPendingInterviews] = useState([]);
 
-  const [pendingInterviews, setPendingInterviews] = useState([
-    { id: '5', date: '2024-09-03', time: '10:00 AM' },
-    { id: '6', date: '2024-09-04', time: '11:00 AM' },
-    { id: '7', date: '2024-09-05', time: '01:00 PM' },
-    { id: '8', date: '2024-09-06', time: '03:00 PM' },
-    { id: '9', date: '2024-09-07', time: '09:00 AM' },
-  ]);
-
-  const [completedInterviews, setCompletedInterviews] = useState([]);
+  //const [completedInterviews, setCompletedInterviews] = useState([]);
 
   const handleRescheduleClick = (interview) => {
     setSelectedInterview(interview);
@@ -48,10 +50,8 @@ function SchedulePage() {
     setInterviews(updatedInterviews);
   };
 
-  const handleEvaluate = (id) => {
-    const interviewToEvaluate = pendingInterviews.find(interview => interview.id === id);
-    setPendingInterviews(pendingInterviews.filter(interview => interview.id !== id));
-    setCompletedInterviews([...completedInterviews, interviewToEvaluate]);
+  const handleEvaluate =async (id) => {
+    await evaluateTheInterview(id)
   };
 
   const renderTable = (interviewList, buttons) => (
@@ -66,20 +66,20 @@ function SchedulePage() {
       </thead>
       <tbody>
         {interviewList.map((interview) => (
-          <tr key={interview.id}>
-            <td>{interview.id}</td>
+          <tr key={interview._id}>
+            <td>{interview._id}</td>
             <td>{interview.date}</td>
-            <td>{interview.time}</td>
+            <td>{interview.role}</td>
             {buttons && (
               <td>
                 {buttons.reschedule && (
                   <Button variant="warning" className="mx-1" onClick={() => handleRescheduleClick(interview)}>Reschedule</Button>
                 )}
                 {buttons.delete && (
-                  <Button variant="danger" className="mx-1" onClick={() => handleDelete(interview.id)}>Delete</Button>
+                  <Button variant="danger" className="mx-1" onClick={() => handleDelete(interview._id)}>Delete</Button>
                 )}
                 {buttons.evaluate && (
-                  <Button variant="success" className="mx-1" onClick={() => handleEvaluate(interview.id)}>Evaluate</Button>
+                  <Button variant="success" className="mx-1" onClick={() => handleEvaluate(interview._id)}>Evaluate</Button>
                 )}
               </td>
             )}
@@ -113,8 +113,8 @@ function SchedulePage() {
             {activeSection === 'completed' && 'Completed Interviews'}
           </h2>
           {activeSection === 'scheduled' && renderTable(interviews, { reschedule: true, delete: true })}
-          {activeSection === 'pending' && renderTable(pendingInterviews, { evaluate: true })}
-          {activeSection === 'completed' && renderTable(completedInterviews, false)}
+          {activeSection === 'pending' && renderTable(interviews, { evaluate: true })}
+          {activeSection === 'completed' && renderTable(interviews, false)}
         </Container>
       </section>
 
