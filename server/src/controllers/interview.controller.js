@@ -7,6 +7,7 @@ import { ACorrectness, Qrelevancy } from "../utils/relevancy.js";
 //new interview
 const scheduleInterview= asyncHandler(async(req,res)=>{
     const {candidateUsername,expertUsername,role,dateAndTime}=req.body;
+    console.log(dateAndTime,candidateUsername,expertUsername,role)
     if(!candidateUsername || !expertUsername || !dateAndTime || !role){
         throw new ApiError(400,"All fields are required")
     }
@@ -108,47 +109,47 @@ const getPendingInterviews= asyncHandler(async(_,res)=>{
 })*/
 
 const interviewComplete = asyncHandler(async (req, res) => {
-    const { interviewId, questions, responses } = req.body;
-  
-    if (!interviewId) {
-      throw new ApiError(400, "Interview ID is required");
+  const { interviewId, questions, responses } = req.body;
+
+  if (!interviewId) {
+    throw new ApiError(400, "Interview ID is required");
+  }
+
+  const updateFields = {};
+
+  if (Array.isArray(questions) && questions.length > 0) {
+    updateFields.$push = { questions: { $each: questions } };
+  }
+
+  if (Array.isArray(responses) && responses.length > 0) {
+    if (!updateFields.$push) {
+      updateFields.$push = {};
     }
+    updateFields.$push.responses = { $each: responses };
+  }
+
+  // Ensure the status is being updated
+  updateFields.$set = { status: "Pending Evaluation" };
+
+  console.log("Update Fields:", updateFields); // Debug: Check what's being updated
   
-   
-    const updateFields = {};
-  
-    if (Array.isArray(questions) && questions.length > 0) {
-      updateFields.$push = { questions: { $each: questions } };
-    }
-  
-    if (Array.isArray(responses) && responses.length > 0) {
-      if (!updateFields.$push) {
-        updateFields.$push = {};
-      }
-      updateFields.$push.responses = { $each: responses };
-    }
-  
-    if (
-      Array.isArray(questions) && questions.length > 0 &&
-      Array.isArray(responses) && responses.length > 0
-    ) {
-      updateFields.$set = { status: "Pending Evaluation" };
-    }
-  
-    const updatedInterview = await Interview.findByIdAndUpdate(
-      interviewId,
-      updateFields,
-      { new: true, useFindAndModify: false }
-    );
-  
-    if (!updatedInterview) {
-      return res.status(404).json({ error: 'Interview not found' });
-    }
-  
-    return res.status(200).json(
-      new ApiResponse(200, { updatedInterview }, "Question Answers uploaded successfully")
-    );
-  });
+  const updatedInterview = await Interview.findByIdAndUpdate(
+    interviewId,
+    updateFields,
+    { new: true, useFindAndModify: false }
+  );
+
+  if (!updatedInterview) {
+    return res.status(404).json({ error: 'Interview not found' });
+  }
+
+  console.log("Updated Interview:", updatedInterview); // Debug: Check the updated interview
+
+  return res.status(200).json(
+    new ApiResponse(200, { updatedInterview }, "Question Answers uploaded successfully")
+  );
+});
+
   
 
 const evaluateInterview = asyncHandler(async (req, res) => {
@@ -156,6 +157,8 @@ const evaluateInterview = asyncHandler(async (req, res) => {
     const interview = await Interview.findById(interviewId);
     const questions = interview.questions;
     const responses = interview.responses;
+    console.log(questions);
+    console.log(responses);
     //interview.role="Web Developer"
     try {
         // Evaluate relevancy scores for questions

@@ -1,57 +1,66 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Navbar, Nav, Table, Button, Modal, Form } from 'react-bootstrap';
 import './SchedulePage.css';
-import useStore  from '../store/useStore.js';
+import useStore from '../store/useStore.js';
 import { evaluateTheInterview } from '../services/api.js';
+
 function SchedulePage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [newDate, setNewDate] = useState('');
-  const [newTime, setNewTime] = useState('');
   const [activeSection, setActiveSection] = useState('scheduled');
-  const {interviews,fetchScheduledInterviews,fetchPendingInterviews,fetchCompletedInterviews}= useStore();
-  useEffect(()=>{
-    const fetch=async()=>{
-    if(activeSection==="scheduled"){
-      fetchScheduledInterviews()
-    }
-    else if(activeSection==="pending"){
-      fetchPendingInterviews()
-    }
-    else if(activeSection==="completed"){
-      fetchCompletedInterviews()
-  }
-}
-fetch()
-  },[activeSection])
-  //const [pendingInterviews, setPendingInterviews] = useState([]);
-
-  //const [completedInterviews, setCompletedInterviews] = useState([]);
+  const { interviews, fetchScheduledInterviews, fetchPendingInterviews, fetchCompletedInterviews } = useStore();
+  
+  useEffect(() => {
+    const fetch = async () => {
+      if (activeSection === "scheduled") {
+        fetchScheduledInterviews();
+      } else if (activeSection === "pending") {
+        fetchPendingInterviews();
+      } else if (activeSection === "completed") {
+        fetchCompletedInterviews();
+      }
+    };
+    fetch();
+  }, [activeSection]);
 
   const handleRescheduleClick = (interview) => {
     setSelectedInterview(interview);
     setNewDate(interview.date);
-    setNewTime(interview.time);
     setShowModal(true);
   };
 
   const handleSaveChanges = () => {
     const updatedInterviews = interviews.map((interview) =>
-      interview.id === selectedInterview.id
-        ? { ...interview, date: newDate, time: newTime }
+      interview._id === selectedInterview._id
+        ? { ...interview, date: newDate }
         : interview
     );
+    // Assuming setInterviews is defined in your useStore
     setInterviews(updatedInterviews);
     setShowModal(false);
   };
 
   const handleDelete = (id) => {
-    const updatedInterviews = interviews.filter(interview => interview.id !== id);
+    const updatedInterviews = interviews.filter(interview => interview._id !== id);
+    // Assuming setInterviews is defined in your useStore
     setInterviews(updatedInterviews);
   };
 
-  const handleEvaluate =async (id) => {
-    await evaluateTheInterview(id)
+  const handleEvaluate = async (id) => {
+    //console.log(id);
+    try {
+      const result = await evaluateTheInterview(id);
+      console.log("Evaluation Results:", result); // Log the evaluation results
+      // Update the state with the evaluated interview if needed
+      const updatedInterviews = interviews.map((interview) =>
+        interview._id === id ? { ...interview, ...result.interview } : interview
+      );
+      // Assuming setInterviews is defined in your useStore
+      setInterviews(updatedInterviews);
+    } catch (error) {
+      console.error("Error evaluating interview:", error);
+    }
   };
 
   const renderTable = (interviewList, buttons) => (
@@ -60,7 +69,7 @@ fetch()
         <tr>
           <th>ID</th>
           <th>Date</th>
-          <th>Time</th>
+          <th>Role</th>
           {buttons && <th>Actions</th>}
         </tr>
       </thead>
@@ -92,7 +101,7 @@ fetch()
   return (
     <>
       <Navbar bg="dark" variant="dark" expand="lg" className="custom-navbar">
-        <Container className='defCol'>
+        <Container className="defCol">
           <Navbar.Brand href="#home">Schedule Management</Navbar.Brand>
           <Navbar.Toggle aria-controls="basic-navbar-nav" />
           <Navbar.Collapse id="basic-navbar-nav">
@@ -130,14 +139,6 @@ fetch()
                 type="date"
                 value={newDate}
                 onChange={(e) => setNewDate(e.target.value)}
-              />
-            </Form.Group>
-            <Form.Group controlId="formNewTime">
-              <Form.Label>New Time</Form.Label>
-              <Form.Control
-                type="time"
-                value={newTime}
-                onChange={(e) => setNewTime(e.target.value)}
               />
             </Form.Group>
           </Form>

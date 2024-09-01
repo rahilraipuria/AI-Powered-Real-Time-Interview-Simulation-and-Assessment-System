@@ -20,6 +20,8 @@ export const registerNewUser = ({
     role,
   });
 
+  export const newMeeting= ({candidateName,expertName,role,dateAndTime})=>api.post("/interviews/newInterview",
+    {candidateUsername:candidateName,expertUsername:expertName,role,dateAndTime})
 export const getListOfExperts=()=>api.get("users/getListOfExperts")
 export const getListOfCandidates=()=>api.get("users/getListOfCandidates")
 
@@ -44,15 +46,29 @@ export const getCompletedInterviews = async () => {
     throw error;
   }
 };
-
-export const evaluateTheInterview= async()=>{
-  try{
-    const response= await api.post("interviews/evaluateInterview")
-    console.log("Evaluate Interview",response.data.data)
-    return response.data.data
-  }
-  catch{
-    console.error("Error Evaluating interviews:", error);
-    throw error;
-  }
+export const evaluateTheInterview = async (interviewId) => {
+  //
+  let data = JSON.stringify({
+    "interviewId":interviewId
+  });
+  
+  let config = {
+    method: 'post',
+    maxBodyLength: Infinity,
+    url: 'http://localhost:8000/api/v1/interviews/evaluateInterview',
+    headers: { 
+      'Content-Type': 'application/json'
+    },
+    data : data
+  };
+  
+  axios.request(config)
+  .then((response) => {
+    console.log(JSON.stringify(response.data));
+  })
+  .catch((error) => {
+    console.log(error);
+  });
 }
+
+
